@@ -17,6 +17,16 @@ import { LoginInput } from './dto/login.input';
 import { RegisterInput } from './dto/register.input';
 import { JwtPayload } from './strategies/jwt.strategy';
 
+interface OAuthProfile {
+  id: string;
+  emails?: Array<{ value: string }>;
+  name?: {
+    givenName?: string;
+    familyName?: string;
+  };
+  photos?: Array<{ value: string }>;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -104,19 +114,19 @@ export class AuthService {
     return user;
   }
 
-  async googleLogin(user: any): Promise<AuthResponse> {
+  async googleLogin(user: OAuthProfile): Promise<AuthResponse> {
     return this.oauthLogin(user, AuthProvider.GOOGLE);
   }
 
-  async githubLogin(user: any): Promise<AuthResponse> {
+  async githubLogin(user: OAuthProfile): Promise<AuthResponse> {
     return this.oauthLogin(user, AuthProvider.GITHUB);
   }
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
     try {
-      const payload = this.jwtService.verify(refreshToken, {
+      const payload = this.jwtService.verify<JwtPayload>(refreshToken, {
         secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret-key',
-      }) as JwtPayload;
+      });
 
       const user = await this.userService.findOne(payload.sub);
 
@@ -136,7 +146,7 @@ export class AuthService {
   }
 
   async oauthLogin(
-    profile: any,
+    profile: OAuthProfile,
     provider: AuthProvider,
   ): Promise<AuthResponse> {
     let user: UserDocument | User | null =
@@ -144,9 +154,12 @@ export class AuthService {
 
     if (!user) {
       // Check if user exists with same email
-      const existingUser = await this.userService.findByEmail(
-        profile.emails?.[0]?.value,
-      );
+      const email = profile.emails?.[0]?.value;
+      if (!email) {
+        throw new UnauthorizedException('Email is required for OAuth login');
+      }
+
+      const existingUser = await this.userService.findByEmail(email);
 
       if (existingUser) {
         // For OAuth, we'll just use the existing user
@@ -154,10 +167,10 @@ export class AuthService {
       } else {
         // Create new user - this returns User type
         const newUserData = {
-          email: profile.emails?.[0]?.value,
-          firstName: profile.name?.givenName,
-          lastName: profile.name?.familyName,
-          avatar: profile.photos?.[0]?.value,
+          email,
+          firstName: profile.name?.givenName || '',
+          lastName: profile.name?.familyName || '',
+          avatar: profile.photos?.[0]?.value || '',
           provider,
           providerId: profile.id,
           isEmailVerified: true,
@@ -168,12 +181,13 @@ export class AuthService {
     }
 
     if (user) {
-      // Handle both User and UserDocument types
-      const userId = (user as any)._id ? (user as any)._id.toString() : user.id;
+      // Handle both User and UserDocument types safely
+      const userId =
+        (user as UserDocument)._id?.toString() || (user as User).id;
       await this.userService.updateLastLogin(userId);
     }
 
-    const tokens = await this.generateTokens(user!);
+    const tokens = await this.generateTokens(user);
 
     return {
       user: user as User,
