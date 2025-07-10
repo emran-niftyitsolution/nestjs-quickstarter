@@ -18,6 +18,9 @@ lerna-debug.log*
 # Tests
 /coverage
 /.nyc_output
+/test-results
+/junit.xml
+/.jest-cache
 
 # IDEs and editors
 /.idea

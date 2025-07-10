@@ -1,0 +1,231 @@
+# LLM Configuration for NestJS Authentication System
+
+## Project Description
+A comprehensive NestJS authentication system with GraphQL API, MongoDB database, OAuth integration (Google, GitHub), and JWT-based authentication.
+
+## LLM Prompt Configuration
+
+### System Context
+```
+You are working with a NestJS authentication system that includes:
+- GraphQL API with Apollo Server
+- MongoDB with Mongoose ODM
+- JWT authentication with refresh tokens
+- OAuth integration (Google, GitHub)
+- User management with roles (USER, ADMIN, MODERATOR)
+- Password hashing with Argon2
+- Email verification and password reset flows
+- Comprehensive validation and error handling
+```
+
+### Key Technologies
+- **Backend**: NestJS v11, TypeScript
+- **Database**: MongoDB with Mongoose, mongoose-paginate-v2
+- **Authentication**: Passport.js, JWT, Argon2
+- **API**: GraphQL with auto-generated schema
+- **OAuth**: Google OAuth 2.0, GitHub OAuth
+- **Validation**: class-validator, class-transformer
+- **Package Manager**: Bun (not npm)
+
+### Example GraphQL Operations
+
+#### Authentication Mutations
+```graphql
+# User Registration
+mutation {
+  register(registerInput: {
+    email: "user@example.com"
+    password: "password123"
+    firstName: "John"
+    lastName: "Doe"
+  }) {
+    user { id email firstName lastName }
+    accessToken
+    refreshToken
+  }
+}
+
+# User Login
+mutation {
+  login(loginInput: {
+    email: "user@example.com"
+    password: "password123"
+  }) {
+    user { id email firstName lastName }
+    accessToken
+    refreshToken
+  }
+}
+
+# Refresh Token
+mutation {
+  refreshToken(refreshToken: "your.refresh.token") {
+    user { id email }
+    accessToken
+    refreshToken
+  }
+}
+```
+
+#### User Management
+```graphql
+# Get Current User
+query {
+  me {
+    id
+    email
+    firstName
+    lastName
+    role
+    isEmailVerified
+    createdAt
+  }
+}
+
+# Get Paginated Users
+query {
+  users(paginationInput: {
+    page: 1
+    limit: 10
+    search: "john"
+    sortBy: "createdAt"
+    sortOrder: "desc"
+  }) {
+    docs {
+      id
+      email
+      firstName
+      lastName
+      role
+      createdAt
+    }
+    pagination {
+      totalDocs
+      totalPages
+      page
+      limit
+      hasNextPage
+      hasPrevPage
+    }
+  }
+}
+
+# Update User
+mutation {
+  updateUser(updateUserInput: {
+    id: "user-id"
+    firstName: "Jane"
+    lastName: "Smith"
+  }) {
+    id
+    firstName
+    lastName
+  }
+}
+```
+
+### Environment Variables Required
+```bash
+MONGODB_URI=mongodb://localhost:27017/nestjs-auth
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_SECRET=your-refresh-secret
+JWT_REFRESH_EXPIRES_IN=7d
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+PORT=3000
+FRONTEND_URL=http://localhost:3000
+```
+
+### File Structure
+```
+src/
+├── auth/
+│   ├── dto/               # Input/Output DTOs
+│   ├── strategies/        # Passport strategies (JWT, Google, GitHub)
+│   ├── auth.service.ts    # Authentication logic
+│   ├── auth.resolver.ts   # GraphQL resolver
+│   └── auth.module.ts     # Auth module
+├── user/
+│   ├── dto/               # User DTOs
+│   ├── user.schema.ts     # Mongoose schema
+│   ├── user.service.ts    # User CRUD operations
+│   ├── user.resolver.ts   # GraphQL resolver
+│   └── user.module.ts     # User module
+├── common/
+│   ├── dto/               # Shared DTOs (pagination)
+│   └── guards/            # Auth guards
+├── app.module.ts          # Root module
+└── main.ts               # Application bootstrap
+```
+
+### Available Commands
+```bash
+# Development
+bun run dev              # Start with watch mode
+bun run build           # Build for production
+bun run start:prod      # Start production server
+
+# Testing
+bun run test            # Run unit tests
+bun run test:e2e        # Run e2e tests
+bun run test:cov        # Test coverage
+
+# Code Quality
+bun run lint            # ESLint check
+bun run format          # Prettier format
+```
+
+### Authentication Flow
+1. User registers/logs in → Receives JWT access token + refresh token
+2. Include `Authorization: Bearer <token>` header for protected routes
+3. Access token expires (15min) → Use refresh token to get new tokens
+4. Protected GraphQL queries/mutations require JWT token
+
+### OAuth Flow
+1. Redirect to `/auth/google` or `/auth/github`
+2. OAuth provider redirects to callback URL
+3. System creates/links user account
+4. Returns JWT tokens for frontend
+
+### Error Handling
+- Validation errors: 400 Bad Request with detailed field errors
+- Authentication errors: 401 Unauthorized
+- Authorization errors: 403 Forbidden
+- Not found errors: 404 Not Found
+- Conflict errors: 409 Conflict (email already exists)
+
+### LLM Instructions
+When working with this codebase:
+1. Always use Bun instead of npm/yarn
+2. Follow NestJS patterns (modules, services, controllers/resolvers)
+3. Use TypeScript strictly with proper typing
+4. Validate all inputs with class-validator decorators
+5. Use Mongoose schemas with proper indexing
+6. Implement proper error handling
+7. Follow GraphQL conventions for queries/mutations
+8. Use JWT authentication for protected endpoints
+9. Always update prd.md after changes
+10. Test authentication flows before considering complete
+
+### Current System Status
+✅ **Fully Functional**
+- User registration/login with email/password
+- JWT authentication with refresh tokens
+- OAuth integration (Google, GitHub)
+- User CRUD operations with pagination
+- Password management (change, forgot, reset)
+- Email verification system
+- Role-based access control
+- GraphQL API with auto-generated schema
+- Comprehensive validation and error handling
+
+🔄 **Ready for Enhancement**
+- Rate limiting
+- Email service integration
+- File upload handling
+- Admin dashboard
+- Audit logging
+- API documentation 
