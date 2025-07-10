@@ -89,12 +89,17 @@ export class TokenService implements ITokenService {
    */
   isTokenExpired(token: string): boolean {
     try {
-      const decoded = this.jwtService.decode(token) as { exp?: number };
-      if (!decoded?.exp) {
+      const decoded = this.jwtService.decode(token);
+      if (
+        !decoded ||
+        typeof decoded !== 'object' ||
+        !('exp' in decoded) ||
+        typeof (decoded as any).exp !== 'number'
+      ) {
         return true;
       }
       const currentTime = Math.floor(Date.now() / 1000);
-      return decoded.exp < currentTime;
+      return (decoded as any).exp < currentTime;
     } catch {
       return true;
     }
@@ -105,11 +110,16 @@ export class TokenService implements ITokenService {
    */
   getTokenExpirationDate(token: string): Date | null {
     try {
-      const decoded = this.jwtService.decode(token) as { exp?: number };
-      if (!decoded?.exp) {
+      const decoded = this.jwtService.decode(token);
+      if (
+        !decoded ||
+        typeof decoded !== 'object' ||
+        !('exp' in decoded) ||
+        typeof (decoded as any).exp !== 'number'
+      ) {
         return null;
       }
-      return new Date(decoded.exp * 1000);
+      return new Date((decoded as any).exp * 1000);
     } catch {
       return null;
     }
@@ -120,12 +130,17 @@ export class TokenService implements ITokenService {
    */
   getTokenRemainingTime(token: string): number {
     try {
-      const decoded = this.jwtService.decode(token) as { exp?: number };
-      if (!decoded?.exp) {
+      const decoded = this.jwtService.decode(token);
+      if (
+        !decoded ||
+        typeof decoded !== 'object' ||
+        !('exp' in decoded) ||
+        typeof (decoded as any).exp !== 'number'
+      ) {
         return 0;
       }
       const currentTime = Math.floor(Date.now() / 1000);
-      return Math.max(0, decoded.exp - currentTime);
+      return Math.max(0, (decoded as any).exp - currentTime);
     } catch {
       return 0;
     }

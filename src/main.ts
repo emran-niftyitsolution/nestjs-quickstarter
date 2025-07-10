@@ -1,8 +1,8 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import * as compression from 'compression';
+import compression from 'compression';
 import helmet from 'helmet';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
@@ -26,7 +26,7 @@ async function bootstrap() {
   );
 
   // Compression middleware
-  app.use(compression());
+  app.use(compression() as any);
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -133,14 +133,14 @@ async function bootstrap() {
       },
     });
 
-    const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
+    const logger = app.get<Logger>(WINSTON_MODULE_NEST_PROVIDER);
     logger.log('📚 Swagger documentation available at /api/docs', 'Bootstrap');
   }
 
   const port = configService.get<number>('app.port') || 3000;
   await app.listen(port);
 
-  const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
+  const logger = app.get<Logger>(WINSTON_MODULE_NEST_PROVIDER);
   logger.log(`🚀 Application is running on port ${port}`, 'Bootstrap');
 
   if (!isProduction) {
