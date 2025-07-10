@@ -7,8 +7,8 @@ interface JwtPayload {
   sub: string;
   userId?: string;
   email?: string;
-  exp?: number;
-  iat?: number;
+  exp: number;
+  iat: number;
 }
 
 /**
@@ -45,9 +45,9 @@ export class TokenService implements ITokenService {
   /**
    * Verify and decode JWT token
    */
-  verifyToken(token: string): any {
+  verifyToken(token: string): JwtPayload {
     try {
-      return this.jwtService.verify(token, {
+      return this.jwtService.verify<JwtPayload>(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
     } catch (error) {
@@ -60,9 +60,9 @@ export class TokenService implements ITokenService {
   /**
    * Verify and decode refresh token
    */
-  verifyRefreshToken(token: string): any {
+  verifyRefreshToken(token: string): JwtPayload {
     try {
-      return this.jwtService.verify(token, {
+      return this.jwtService.verify<JwtPayload>(token, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
     } catch (error) {
@@ -78,8 +78,8 @@ export class TokenService implements ITokenService {
   extractUserIdFromToken(token: string): string {
     try {
       const decoded = this.verifyToken(token);
-      return decoded.sub || decoded.userId;
-    } catch (error) {
+      return decoded.sub || decoded.userId || '';
+    } catch {
       throw new Error('Failed to extract user ID from token');
     }
   }
@@ -89,8 +89,8 @@ export class TokenService implements ITokenService {
    */
   isTokenExpired(token: string): boolean {
     try {
-      const decoded = this.jwtService.decode(token) as any;
-      if (!decoded || !decoded.exp) {
+      const decoded = this.jwtService.decode(token) as { exp?: number };
+      if (!decoded?.exp) {
         return true;
       }
       const currentTime = Math.floor(Date.now() / 1000);
@@ -105,8 +105,8 @@ export class TokenService implements ITokenService {
    */
   getTokenExpirationDate(token: string): Date | null {
     try {
-      const decoded = this.jwtService.decode(token) as any;
-      if (!decoded || !decoded.exp) {
+      const decoded = this.jwtService.decode(token) as { exp?: number };
+      if (!decoded?.exp) {
         return null;
       }
       return new Date(decoded.exp * 1000);
@@ -120,8 +120,8 @@ export class TokenService implements ITokenService {
    */
   getTokenRemainingTime(token: string): number {
     try {
-      const decoded = this.jwtService.decode(token) as any;
-      if (!decoded || !decoded.exp) {
+      const decoded = this.jwtService.decode(token) as { exp?: number };
+      if (!decoded?.exp) {
         return 0;
       }
       const currentTime = Math.floor(Date.now() / 1000);
