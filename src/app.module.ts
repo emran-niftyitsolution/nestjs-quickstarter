@@ -97,50 +97,61 @@ import { UserModule } from './user/user.module';
           const originalError = (error.extensions?.originalError as any) || {};
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           if (
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             Array.isArray(originalError.message) &&
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             originalError.statusCode === 400
           ) {
+            // Group errors by field name
+            const fieldErrors: Record<string, string[]> = {};
+
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            originalError.message.forEach((msg: string) => {
+              // Extract field name by finding the pattern before validation keywords
+              const validationKeywords = [
+                'must',
+                'should',
+                'is',
+                'are',
+                'has',
+                'have',
+                'be',
+              ];
+              let fieldName = 'unknown';
+
+              // Look for patterns like "Last name", "First name", "Email address", etc.
+              for (const keyword of validationKeywords) {
+                const index = msg.toLowerCase().indexOf(keyword);
+                if (index > 0) {
+                  const beforeKeyword = msg.substring(0, index).trim();
+                  // Convert "Last name" to "lastName", "First name" to "firstName", etc.
+                  fieldName = beforeKeyword
+                    .toLowerCase()
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                    .replace(/\s+(\w)/g, (_, letter) => letter.toUpperCase());
+                  break;
+                }
+              }
+
+              // Group messages by field
+              if (!fieldErrors[fieldName]) {
+                fieldErrors[fieldName] = [];
+              }
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+              fieldErrors[fieldName].push(msg);
+            });
+
+            // Convert grouped errors to array format
+            const mergedErrors = Object.entries(fieldErrors).map(
+              ([field, messages]) => ({
+                field,
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                message: messages.join('; '),
+              }),
+            );
+
             return {
               message: 'Validation failed',
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-              errors:
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-                originalError.message.map((msg: string) => {
-                  // Extract field name by finding the pattern before validation keywords
-                  const validationKeywords = [
-                    'must',
-                    'should',
-                    'is',
-                    'are',
-                    'has',
-                    'have',
-                    'be',
-                  ];
-                  let fieldName = 'unknown';
-
-                  // Look for patterns like "Last name", "First name", "Email address", etc.
-                  for (const keyword of validationKeywords) {
-                    const index = msg.toLowerCase().indexOf(keyword);
-                    if (index > 0) {
-                      const beforeKeyword = msg.substring(0, index).trim();
-                      // Convert "Last name" to "lastName", "First name" to "firstName", etc.
-                      fieldName = beforeKeyword
-                        .toLowerCase()
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-                        .replace(/\s+(\w)/g, (_, letter) =>
-                          letter.toUpperCase(),
-                        );
-                      break;
-                    }
-                  }
-
-                  return {
-                    field: fieldName,
-                    message: msg,
-                  };
-                }),
+              errors: mergedErrors,
               code: 'BAD_REQUEST',
               path: error.path,
               locations: error.locations,

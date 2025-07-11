@@ -8,6 +8,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { IsNotWhitespace } from '../../common/decorators/is-not-whitespace.decorator';
 import { User } from '../../user/user.schema';
 
 @InputType()
@@ -47,6 +48,9 @@ export class RegisterInput extends PickType(
   @IsString()
   @MinLength(2, { message: 'First name must be at least 2 characters long' })
   @MaxLength(50, { message: 'First name must not exceed 50 characters' })
+  @IsNotWhitespace({
+    message: 'First name must not be empty or contain only whitespace',
+  })
   firstName?: string;
 
   @Field({ nullable: true })
@@ -60,6 +64,9 @@ export class RegisterInput extends PickType(
   @IsString()
   @MinLength(2, { message: 'Last name must be at least 2 characters long' })
   @MaxLength(50, { message: 'Last name must not exceed 50 characters' })
+  @IsNotWhitespace({
+    message: 'Last name must not be empty or contain only whitespace',
+  })
   lastName?: string;
 
   @Field({ nullable: true })
