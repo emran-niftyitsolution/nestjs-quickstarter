@@ -40,7 +40,7 @@ export class AuthService {
       const user = await this.userService.create({
         ...registerInput,
         provider: AuthProvider.LOCAL,
-      });
+      } as any);
 
       const tokens = await this.generateTokens(user);
 
@@ -183,7 +183,7 @@ export class AuthService {
     if (user) {
       // Handle both User and UserDocument types safely
       const userId =
-        (user as UserDocument)._id?.toString() || (user as User).id;
+        (user as UserDocument)._id?.toString() || (user as User)._id;
       await this.userService.updateLastLogin(userId);
     }
 
@@ -264,10 +264,10 @@ export class AuthService {
   private async generateTokens(
     user: UserDocument | User,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    // Check if it's a UserDocument (has _id) or a User (has id)
+    // Check if it's a UserDocument (has _id) or a User (has _id)
     const userId = (user as UserDocument)._id
       ? (user as UserDocument)._id.toString()
-      : (user as User).id;
+      : (user as User)._id;
 
     const payload: JwtPayload = {
       sub: userId,

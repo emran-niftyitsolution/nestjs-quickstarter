@@ -6,7 +6,7 @@ import { User } from '../user.schema';
 export class CreateUserInput extends OmitType(
   User,
   [
-    'id',
+    '_id',
     'createdAt',
     'updatedAt',
     'emailVerificationToken',

@@ -69,7 +69,7 @@ export class AuthResolver {
     @Args('currentPassword') currentPassword: string,
     @Args('newPassword') newPassword: string,
   ): Promise<boolean> {
-    const userId = context.req.user.id;
+    const userId = context.req.user._id;
     return this.authService.changePassword(
       userId,
       currentPassword,

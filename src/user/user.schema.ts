@@ -40,7 +40,7 @@ export class User {
     example: '64f5b2c3d1e5f7g8h9i0j1k2',
     readOnly: true,
   })
-  id: string;
+  _id: string;
 
   @Field()
   @ApiProperty({

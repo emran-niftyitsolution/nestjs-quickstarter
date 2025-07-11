@@ -37,7 +37,7 @@ export class UserCacheService implements IUserCacheService {
    * Set cached user by ID
    */
   async setCachedUser(user: User): Promise<void> {
-    const cacheKey = this.cacheService.getUserKey(user.id);
+    const cacheKey = this.cacheService.getUserKey(user._id);
     await this.cacheService.set(cacheKey, user, this.USER_CACHE_TTL);
   }
 
@@ -123,23 +123,19 @@ export class UserCacheService implements IUserCacheService {
    * Cache user with automatic lookup cache updates
    * Helps maintain consistency across different lookup methods
    */
-  async cacheUserWithLookups(user: User | UserDocument): Promise<void> {
-    // Cache by ID - convert to plain object if it's a Mongoose document
-    const userObj: User =
-      'toObject' in user && typeof user.toObject === 'function'
-        ? user.toObject()
-        : (user as User);
-
-    await this.setCachedUser(userObj);
+  async cacheUserWithLookups(user: UserDocument): Promise<void> {
+    // Cache by ID
+    const cacheKey = this.cacheService.getUserKey(user._id);
+    await this.cacheService.set(cacheKey, user, this.USER_CACHE_TTL);
 
     // Cache by email if available
     if (user.email) {
-      await this.setCachedUserByEmail(user.email, user as UserDocument);
+      await this.setCachedUserByEmail(user.email, user);
     }
 
     // Cache by username if available
     if (user.username) {
-      await this.setCachedUserByUsername(user.username, user as UserDocument);
+      await this.setCachedUserByUsername(user.username, user);
     }
   }
 
@@ -147,12 +143,10 @@ export class UserCacheService implements IUserCacheService {
    * Invalidate all caches for a user
    * Used when user is updated or deleted
    */
-  async invalidateAllUserCaches(
-    user: User | { id?: string; email?: string; username?: string },
-  ): Promise<void> {
+  async invalidateAllUserCaches(user: User | UserDocument): Promise<void> {
     // Invalidate by ID
-    if (user.id) {
-      await this.invalidateUserCache(user.id);
+    if (user._id) {
+      await this.invalidateUserCache(user._id);
     }
 
     // Invalidate by email

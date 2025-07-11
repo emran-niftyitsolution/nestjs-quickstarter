@@ -1,4 +1,8 @@
-import { NotFoundException, UseGuards } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  UseGuards,
+} from '@nestjs/common';
 import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -28,26 +32,40 @@ export class UserResolver {
   }
 
   @Query(() => User, { name: 'user' })
-  async findOne(@Args('id', { type: () => ID }) id: string): Promise<User> {
+  @UseGuards(JwtAuthGuard)
+  async findOne(
+    @Args('id') id: string,
+    @CurrentUser() currentUser: User,
+  ): Promise<User> {
+    // Users can only view their own profile unless they're admin
+    if (currentUser.role !== UserRole.ADMIN && currentUser._id !== id) {
+      throw new ForbiddenException('You can only view your own profile');
+    }
+
     const user = await this.userService.findOne(id);
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
+
     return user;
   }
 
   @Mutation(() => User)
   @UseGuards(JwtAuthGuard)
-  updateUser(
-    @Args('id', { type: () => ID }) id: string,
+  async updateProfile(
     @Args('updateUserInput') updateUserInput: UpdateUserInput,
-    @CurrentUser() currentUser: User,
-  ) {
+    @CurrentUser() user: User,
+  ): Promise<User> {
+    const currentUser = await this.userService.findOne(user._id);
+    if (!currentUser) {
+      throw new NotFoundException('User not found');
+    }
+
     // Users can only update their own profile unless they're admin
-    if (currentUser.role !== UserRole.ADMIN && currentUser.id !== id) {
+    if (currentUser.role !== UserRole.ADMIN && currentUser._id !== user._id) {
       throw new NotFoundException('You can only update your own profile');
     }
-    return this.userService.update(id, updateUserInput);
+    return this.userService.update(user._id, updateUserInput);
   }
 
   @Mutation(() => Boolean)
@@ -60,7 +78,7 @@ export class UserResolver {
   @Query(() => User, { name: 'me' })
   @UseGuards(JwtAuthGuard)
   async getCurrentUser(@CurrentUser() user: User): Promise<User> {
-    const currentUser = await this.userService.findOne(user.id);
+    const currentUser = await this.userService.findOne(user._id);
     if (!currentUser) {
       throw new NotFoundException('User not found');
     }
