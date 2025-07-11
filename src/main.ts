@@ -43,10 +43,7 @@ async function bootstrap() {
   );
 
   // Enable CORS for development
-  app.enableCors({
-    origin: configService.get<string>('app.frontendUrl'),
-    credentials: true,
-  });
+  app.enableCors();
 
   // Setup Swagger API Documentation
   if (!isProduction) {
