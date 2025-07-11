@@ -5,15 +5,18 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { redisStore } from 'cache-manager-redis-store';
 import { Request } from 'express';
+import { GraphQLError } from 'graphql';
 import { WinstonModule } from 'nest-winston';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CommonModule } from './common/common.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { ValidationExceptionsFilter } from './common/filters/validation-exceptions.filter';
+import { CustomThrottlerGuard } from './common/guards/throttler.guard';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import configuration from './config/configuration';
@@ -89,6 +92,62 @@ import { UserModule } from './user/user.module';
         playground: configService.get<string>('app.nodeEnv') !== 'production',
         introspection: true,
         context: ({ req }: { req: Request }) => ({ req }),
+        formatError: (error: GraphQLError) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const originalError = (error.extensions?.originalError as any) || {};
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          if (
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            Array.isArray(originalError.message) &&
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            originalError.statusCode === 400
+          ) {
+            return {
+              message: 'Validation failed',
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+              errors:
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+                originalError.message.map((msg: string) => {
+                  // Extract field name by finding the pattern before validation keywords
+                  const validationKeywords = [
+                    'must',
+                    'should',
+                    'is',
+                    'are',
+                    'has',
+                    'have',
+                    'be',
+                  ];
+                  let fieldName = 'unknown';
+
+                  // Look for patterns like "Last name", "First name", "Email address", etc.
+                  for (const keyword of validationKeywords) {
+                    const index = msg.toLowerCase().indexOf(keyword);
+                    if (index > 0) {
+                      const beforeKeyword = msg.substring(0, index).trim();
+                      // Convert "Last name" to "lastName", "First name" to "firstName", etc.
+                      fieldName = beforeKeyword
+                        .toLowerCase()
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                        .replace(/\s+(\w)/g, (_, letter) =>
+                          letter.toUpperCase(),
+                        );
+                      break;
+                    }
+                  }
+
+                  return {
+                    field: fieldName,
+                    message: msg,
+                  };
+                }),
+              code: 'BAD_REQUEST',
+              path: error.path,
+              locations: error.locations,
+            };
+          }
+          return error;
+        },
       }),
       inject: [ConfigService],
     }),
@@ -108,11 +167,15 @@ import { UserModule } from './user/user.module';
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: CustomThrottlerGuard,
     },
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: ValidationExceptionsFilter,
     },
     {
       provide: APP_INTERCEPTOR,

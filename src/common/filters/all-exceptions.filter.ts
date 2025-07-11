@@ -19,7 +19,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const response = ctx.getResponse();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const request = ctx.getRequest();
 
     const isHttpException = exception instanceof HttpException;
@@ -37,8 +39,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
-      path: request.url || 'unknown',
-      method: request.method || 'unknown',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      path: request?.url || 'unknown',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      method: request?.method || 'unknown',
       message,
       ...(isDevelopment && {
         stack: exception instanceof Error ? exception.stack : undefined,
@@ -50,13 +54,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
       `${isHttpException ? 'HTTP' : 'Unexpected'} Error: ${message}`,
       {
         statusCode: status,
-        path: request.url,
-        method: request.method,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        path: request?.url || 'unknown',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        method: request?.method || 'unknown',
         stack: exception instanceof Error ? exception.stack : String(exception),
       },
       'AllExceptionsFilter',
     );
 
-    response.status(status).json(errorResponse);
+    // Handle different response types (HTTP vs GraphQL)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (response && typeof response.status === 'function') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      response.status(status).json(errorResponse);
+    } else {
+      // For GraphQL or other contexts where response.status is not available
+      this.logger.error('Response object does not support status method', {
+        responseType: typeof response,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        hasStatus: typeof response?.status,
+      });
+    }
   }
 }
