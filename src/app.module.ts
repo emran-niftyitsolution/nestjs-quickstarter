@@ -7,6 +7,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { redisStore } from 'cache-manager-redis-store';
+import { Request } from 'express';
 import { WinstonModule } from 'nest-winston';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -87,7 +88,7 @@ import { UserModule } from './user/user.module';
         sortSchema: true,
         playground: configService.get<string>('app.nodeEnv') !== 'production',
         introspection: true,
-        context: ({ req }) => ({ req }),
+        context: ({ req }: { req: Request }) => ({ req }),
       }),
       inject: [ConfigService],
     }),
