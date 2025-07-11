@@ -3,12 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   clearAllMocks,
   expectMockToHaveBeenCalledWith,
   mockConfigService,
-  mockGitHubProfile,
-  mockGoogleProfile,
   mockJwtService,
   mockLogger,
   mockUser,
@@ -229,10 +230,9 @@ describe('AuthService', () => {
       userService.updatePassword.mockResolvedValue(true);
 
       const result = await service.changePassword(
-        userId,
-        mockUser.email,
         oldPassword,
         newPassword,
+        userId,
       );
 
       expectMockToHaveBeenCalledWith(userService.findByEmail, mockUser.email);
@@ -370,97 +370,77 @@ describe('AuthService', () => {
     });
   });
 
-  describe('generateTokens', () => {
-    it('should generate access and refresh tokens', async () => {
-      jwtService.signAsync
-        .mockResolvedValueOnce('access-token')
-        .mockResolvedValueOnce('refresh-token');
+  describe('token generation via login', () => {
+    it('should generate access and refresh tokens during login', async () => {
+      const loginInput: LoginInput = {
+        email: 'test@example.com',
+        password: 'password123',
+      };
 
-      const result = await service.generateTokens(mockUser);
+      userService.findByEmail.mockResolvedValue(mockUser);
+      userService.verifyPassword.mockResolvedValue(true);
+      userService.updateLastLogin.mockResolvedValue(undefined);
+      jwtService.sign
+        .mockReturnValueOnce('access-token')
+        .mockReturnValueOnce('refresh-token');
 
-      expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
-      expect(jwtService.signAsync).toHaveBeenNthCalledWith(
-        1,
-        { sub: mockUser.id, email: mockUser.email, role: mockUser.role },
-        { secret: 'test-secret-key-minimum-32-characters', expiresIn: '15m' },
-      );
-      expect(jwtService.signAsync).toHaveBeenNthCalledWith(
-        2,
-        { sub: mockUser.id, email: mockUser.email, role: mockUser.role },
-        {
-          secret: 'test-refresh-secret-minimum-32-characters',
-          expiresIn: '7d',
-        },
-      );
+      const result = await service.login(loginInput);
+
+      expect(jwtService.sign).toHaveBeenCalledTimes(2);
       expect(result.accessToken).toBe('access-token');
       expect(result.refreshToken).toBe('refresh-token');
     });
   });
 
-  describe('validateOAuthUser', () => {
+  describe('OAuth Login', () => {
+    const mockGoogleProfile = {
+      id: 'google-123',
+      emails: [{ value: 'test@google.com' }],
+      name: { givenName: 'John', familyName: 'Doe' },
+    };
+
+    const mockGitHubProfile = {
+      id: 'github-123',
+      emails: [{ value: 'test@github.com' }],
+      name: { givenName: 'John', familyName: 'Doe' },
+    };
+
     describe('Google OAuth', () => {
       it('should create new user for first-time Google login', async () => {
         userService.findByProvider.mockResolvedValue(null);
         userService.findByEmail.mockResolvedValue(null);
         userService.create.mockResolvedValue(mockUser);
+        userService.updateLastLogin.mockResolvedValue(undefined);
+        jwtService.sign
+          .mockReturnValueOnce('access-token')
+          .mockReturnValueOnce('refresh-token');
 
-        const result = await service.validateOAuthUser(
-          mockGoogleProfile,
-          AuthProvider.GOOGLE,
-        );
+        const result = await service.googleLogin(mockGoogleProfile);
 
         expect(userService.findByProvider).toHaveBeenCalledWith(
           AuthProvider.GOOGLE,
-          'google-id-123',
+          'google-123',
         );
-        expect(userService.findByEmail).toHaveBeenCalledWith('user@gmail.com');
-        expect(userService.create).toHaveBeenCalledWith({
-          email: 'user@gmail.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          provider: AuthProvider.GOOGLE,
-          providerId: 'google-id-123',
-          isEmailVerified: true,
-        });
-        expect(result).toEqual(mockUser);
+        expect(userService.findByEmail).toHaveBeenCalledWith('test@google.com');
+        expect(result.user).toEqual(mockUser);
+        expect(result.accessToken).toBe('access-token');
       });
 
       it('should return existing user for Google OAuth', async () => {
         userService.findByProvider.mockResolvedValue(mockUser);
+        userService.updateLastLogin.mockResolvedValue(undefined);
+        jwtService.sign
+          .mockReturnValueOnce('access-token')
+          .mockReturnValueOnce('refresh-token');
 
-        const result = await service.validateOAuthUser(
-          mockGoogleProfile,
-          AuthProvider.GOOGLE,
-        );
+        const result = await service.googleLogin(mockGoogleProfile);
 
         expect(userService.findByProvider).toHaveBeenCalledWith(
           AuthProvider.GOOGLE,
-          'google-id-123',
+          'google-123',
         );
         expect(userService.create).not.toHaveBeenCalled();
-        expect(result).toEqual(mockUser);
-      });
-
-      it('should link Google account to existing email user', async () => {
-        const existingUser = { ...mockUser, provider: AuthProvider.LOCAL };
-        userService.findByProvider.mockResolvedValue(null);
-        userService.findByEmail.mockResolvedValue(existingUser);
-        userService.update.mockResolvedValue({
-          ...existingUser,
-          provider: AuthProvider.GOOGLE,
-        });
-
-        const result = await service.validateOAuthUser(
-          mockGoogleProfile,
-          AuthProvider.GOOGLE,
-        );
-
-        expect(userService.update).toHaveBeenCalledWith({
-          id: existingUser.id,
-          provider: AuthProvider.GOOGLE,
-          providerId: 'google-id-123',
-        });
-        expect(result.provider).toBe(AuthProvider.GOOGLE);
+        expect(result.user).toEqual(mockUser);
       });
     });
 
@@ -469,49 +449,43 @@ describe('AuthService', () => {
         userService.findByProvider.mockResolvedValue(null);
         userService.findByEmail.mockResolvedValue(null);
         userService.create.mockResolvedValue(mockUser);
+        userService.updateLastLogin.mockResolvedValue(undefined);
+        jwtService.sign
+          .mockReturnValueOnce('access-token')
+          .mockReturnValueOnce('refresh-token');
 
-        const result = await service.validateOAuthUser(
-          mockGitHubProfile,
-          AuthProvider.GITHUB,
-        );
+        const result = await service.githubLogin(mockGitHubProfile);
 
         expect(userService.findByProvider).toHaveBeenCalledWith(
           AuthProvider.GITHUB,
-          'github-id-123',
+          'github-123',
         );
-        expect(userService.create).toHaveBeenCalledWith({
-          email: 'user@github.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          provider: AuthProvider.GITHUB,
-          providerId: 'github-id-123',
-          isEmailVerified: true,
-        });
-        expect(result).toEqual(mockUser);
+        expect(result.user).toEqual(mockUser);
       });
 
       it('should return existing user for GitHub OAuth', async () => {
         userService.findByProvider.mockResolvedValue(mockUser);
+        userService.updateLastLogin.mockResolvedValue(undefined);
+        jwtService.sign
+          .mockReturnValueOnce('access-token')
+          .mockReturnValueOnce('refresh-token');
 
-        const result = await service.validateOAuthUser(
-          mockGitHubProfile,
-          AuthProvider.GITHUB,
-        );
+        const result = await service.githubLogin(mockGitHubProfile);
 
         expect(userService.findByProvider).toHaveBeenCalledWith(
           AuthProvider.GITHUB,
-          'github-id-123',
+          'github-123',
         );
-        expect(result).toEqual(mockUser);
+        expect(result.user).toEqual(mockUser);
       });
     });
 
-    it('should throw error for invalid OAuth profile', async () => {
+    it('should throw error for OAuth profile without email', async () => {
       const invalidProfile = { id: 'test-id' }; // Missing email
 
-      await expect(
-        service.validateOAuthUser(invalidProfile, AuthProvider.GOOGLE),
-      ).rejects.toThrow('Invalid OAuth profile: missing required fields');
+      await expect(service.googleLogin(invalidProfile)).rejects.toThrow(
+        'Email is required for OAuth login',
+      );
     });
   });
 

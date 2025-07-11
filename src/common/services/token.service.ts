@@ -89,17 +89,17 @@ export class TokenService implements ITokenService {
    */
   isTokenExpired(token: string): boolean {
     try {
-      const decoded = this.jwtService.decode(token);
+      const decoded: unknown = this.jwtService.decode(token);
       if (
         !decoded ||
         typeof decoded !== 'object' ||
         !('exp' in decoded) ||
-        typeof (decoded as any).exp !== 'number'
+        typeof (decoded as Record<string, unknown>).exp !== 'number'
       ) {
         return true;
       }
       const currentTime = Math.floor(Date.now() / 1000);
-      return (decoded as any).exp < currentTime;
+      return ((decoded as Record<string, unknown>).exp as number) < currentTime;
     } catch {
       return true;
     }
@@ -110,16 +110,18 @@ export class TokenService implements ITokenService {
    */
   getTokenExpirationDate(token: string): Date | null {
     try {
-      const decoded = this.jwtService.decode(token);
+      const decoded: unknown = this.jwtService.decode(token);
       if (
         !decoded ||
         typeof decoded !== 'object' ||
         !('exp' in decoded) ||
-        typeof (decoded as any).exp !== 'number'
+        typeof (decoded as Record<string, unknown>).exp !== 'number'
       ) {
         return null;
       }
-      return new Date((decoded as any).exp * 1000);
+      return new Date(
+        ((decoded as Record<string, unknown>).exp as number) * 1000,
+      );
     } catch {
       return null;
     }
@@ -130,17 +132,20 @@ export class TokenService implements ITokenService {
    */
   getTokenRemainingTime(token: string): number {
     try {
-      const decoded = this.jwtService.decode(token);
+      const decoded: unknown = this.jwtService.decode(token);
       if (
         !decoded ||
         typeof decoded !== 'object' ||
         !('exp' in decoded) ||
-        typeof (decoded as any).exp !== 'number'
+        typeof (decoded as Record<string, unknown>).exp !== 'number'
       ) {
         return 0;
       }
       const currentTime = Math.floor(Date.now() / 1000);
-      return Math.max(0, (decoded as any).exp - currentTime);
+      return Math.max(
+        0,
+        ((decoded as Record<string, unknown>).exp as number) - currentTime,
+      );
     } catch {
       return 0;
     }

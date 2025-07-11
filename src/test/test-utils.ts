@@ -5,6 +5,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { AuthFactory, UserFactory } from './factories';
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+
 /**
  * Enhanced Test Utilities with Faker Integration
  * Following SOLID principles for maintainable and reusable test infrastructure
@@ -156,14 +161,12 @@ export class MockProviders {
           ),
         ),
       verifyPassword: jest.fn().mockResolvedValue(true),
-      generateRandomPassword: jest
-        .fn()
-        .mockImplementation((length = 12) =>
-          faker.internet.password({
-            length,
-            pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
-          }),
-        ),
+      generateRandomPassword: jest.fn().mockImplementation((length = 12) =>
+        faker.internet.password({
+          length,
+          pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
+        }),
+      ),
       validatePasswordStrength: jest.fn().mockReturnValue(true),
     };
   }
@@ -422,6 +425,28 @@ export const mockUser = UserFactory.mockUser();
 export const mockAdminUser = UserFactory.mockAdminUser();
 export const mockUserService = MockProviders.createMockUserRepository();
 export const mockAuthService = MockProviders.createMockAuthService();
+
+// Add missing JWT service mock
+export const mockJwtService = MockProviders.createMockTokenService();
+
+// Add missing GraphQL context mock
+export const mockGraphQLContext = GraphQLTestUtils.createMockGqlContext();
+
+// Add missing pagination result mock
+export const mockPaginationResult = UserFactory.mockPaginatedUsers(1, 10);
+
+// Add missing user model mock
+export const mockUserModel = MockProviders.createMockUserRepository();
+
+// Add missing config service mock
+export const mockConfigService = {
+  get: jest.fn(),
+  getOrThrow: jest.fn(),
+};
+
+// Add missing auth response mock
+export const mockAuthResponse = AuthFactory.authResponse();
+
 export const mockLogger = {
   log: jest.fn(),
   error: jest.fn(),
@@ -511,14 +536,14 @@ export const clearAllMocks = () => {
 };
 
 export const expectMockToHaveBeenCalledWith = (
-  mockFn: jest.Mock,
+  mockFn: jest.MockedFunction<any>,
   ...args: any[]
 ) => {
   expect(mockFn).toHaveBeenCalledWith(...args);
 };
 
 export const expectMockToHaveBeenCalledTimes = (
-  mockFn: jest.Mock,
+  mockFn: jest.MockedFunction<any>,
   times: number,
 ) => {
   expect(mockFn).toHaveBeenCalledTimes(times);

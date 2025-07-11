@@ -1,4 +1,13 @@
-import { ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+import {
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { clearAllMocks, mockLogger } from '../../test/test-utils';
@@ -6,7 +15,7 @@ import { AllExceptionsFilter } from './all-exceptions.filter';
 
 describe('AllExceptionsFilter', () => {
   let filter: AllExceptionsFilter;
-  let logger: jest.Mocked<any>;
+  let logger: jest.Mocked<Logger>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -42,8 +51,9 @@ describe('AllExceptionsFilter', () => {
       switchToHttp: jest.fn(() => ({
         getResponse: () => mockResponse,
         getRequest: () => mockRequest,
-      })),
-      getType: jest.fn(() => contextType),
+        getNext: jest.fn(),
+      })) as any,
+      getType: jest.fn(() => contextType) as any,
       getArgs: jest.fn(),
       getArgByIndex: jest.fn(),
       switchToRpc: jest.fn(),
@@ -70,7 +80,9 @@ describe('AllExceptionsFilter', () => {
         expect(mockResponse.json).toHaveBeenCalledWith({
           statusCode: HttpStatus.BAD_REQUEST,
           message: 'Validation failed',
-          timestamp: expect.any(String),
+          timestamp: expect.stringMatching(
+            /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+          ),
           path: '/test',
         });
         expect(logger.error).toHaveBeenCalledWith(
@@ -337,10 +349,10 @@ describe('AllExceptionsFilter', () => {
 
       it('should handle missing request properties gracefully', () => {
         const { mockHost, mockRequest } = createMockHost();
-        mockRequest.url = undefined;
-        mockRequest.method = undefined;
-        mockRequest.ip = undefined;
-        mockRequest.headers = {};
+        (mockRequest as any).url = undefined;
+        (mockRequest as any).method = undefined;
+        (mockRequest as any).ip = undefined;
+        (mockRequest as any).headers = {};
 
         const exception = new HttpException(
           'Test error',
@@ -370,8 +382,9 @@ describe('AllExceptionsFilter', () => {
           switchToHttp: jest.fn(() => ({
             getResponse: () => mockResponse,
             getRequest: () => null,
+            getNext: () => null,
           })),
-          getType: jest.fn(() => 'http'),
+          getType: jest.fn(() => 'http' as any),
           getArgs: jest.fn(),
           getArgByIndex: jest.fn(),
           switchToRpc: jest.fn(),

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
@@ -54,12 +57,12 @@ describe('UserResolver', () => {
           totalPages: 1,
           hasPrevPage: false,
           hasNextPage: false,
-          prevPage: null,
-          nextPage: null,
+          prevPage: undefined,
+          nextPage: undefined,
         },
       });
 
-      const result = await resolver.users(paginationInput, adminContext);
+      const result = await resolver.findAll(paginationInput);
 
       expectMockToHaveBeenCalledWith(userService.findAll, paginationInput);
       expect(result.docs).toEqual([mockUser]);

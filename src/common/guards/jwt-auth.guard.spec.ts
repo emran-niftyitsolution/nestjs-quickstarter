@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
@@ -95,12 +96,14 @@ describe('JwtAuthGuard', () => {
         // Mock GqlExecutionContext.create
         jest
           .spyOn(GqlExecutionContext, 'create')
-          .mockImplementation(createMockGqlExecutionContext(mockUser).create);
+          .mockImplementation(
+            () => createMockGqlExecutionContext(mockUser).create() as any,
+          );
       });
 
       it('should allow access with valid authenticated user in GraphQL', async () => {
         const context = createMockExecutionContext(mockUser, 'graphql');
-        context.getType = jest.fn(() => 'graphql');
+        (context as any).getType = jest.fn(() => 'graphql');
         reflector.getAllAndOverride.mockReturnValue(false); // Not public
 
         const result = await guard.canActivate(context);
@@ -112,10 +115,12 @@ describe('JwtAuthGuard', () => {
       it('should deny access without authenticated user in GraphQL', async () => {
         jest
           .spyOn(GqlExecutionContext, 'create')
-          .mockImplementation(createMockGqlExecutionContext(null).create);
+          .mockImplementation(
+            () => createMockGqlExecutionContext(null).create() as any,
+          );
 
         const context = createMockExecutionContext(null, 'graphql');
-        context.getType = jest.fn(() => 'graphql');
+        (context as any).getType = jest.fn(() => 'graphql');
         reflector.getAllAndOverride.mockReturnValue(false); // Not public
 
         await expect(guard.canActivate(context)).rejects.toThrow(
@@ -125,13 +130,13 @@ describe('JwtAuthGuard', () => {
 
       it('should handle GraphQL context extraction correctly', async () => {
         const context = createMockExecutionContext(mockUser, 'graphql');
-        context.getType = jest.fn(() => 'graphql');
+        (context as any).getType = jest.fn(() => 'graphql');
         reflector.getAllAndOverride.mockReturnValue(false); // Not public
 
         const result = await guard.canActivate(context);
 
         expect(result).toBe(true);
-        expect(context.getType).toHaveBeenCalled();
+        expect((context as any).getType).toHaveBeenCalled();
         expect(GqlExecutionContext.create).toHaveBeenCalledWith(context);
       });
     });
@@ -139,7 +144,7 @@ describe('JwtAuthGuard', () => {
     describe('Context type detection', () => {
       it('should handle unknown context types', async () => {
         const context = createMockExecutionContext(mockUser, 'http');
-        context.getType = jest.fn(() => 'unknown' as any);
+        (context as any).getType = jest.fn(() => 'unknown');
         reflector.getAllAndOverride.mockReturnValue(false); // Not public
 
         // Should default to HTTP context behavior
@@ -150,14 +155,14 @@ describe('JwtAuthGuard', () => {
 
       it('should prioritize public route check over context type', async () => {
         const context = createMockExecutionContext(null, 'http');
-        context.getType = jest.fn(() => 'graphql');
+        (context as any).getType = jest.fn(() => 'graphql');
         reflector.getAllAndOverride.mockReturnValue(true); // Public route
 
         const result = await guard.canActivate(context);
 
         expect(result).toBe(true);
         // Should not even check context type for public routes
-        expect(context.getType).not.toHaveBeenCalled();
+        expect((context as any).getType).not.toHaveBeenCalled();
       });
     });
 

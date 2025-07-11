@@ -20,6 +20,21 @@ interface ErrorResponse {
   stack?: string;
 }
 
+interface RequestWithUser {
+  url: string;
+  method: string;
+  user?: { id: string };
+}
+
+interface HttpResponse {
+  status(code: number): HttpResponse;
+  json(body: any): void;
+}
+
+interface GraphQLContext {
+  req?: RequestWithUser;
+}
+
 @Catch(HttpException)
 export class HttpExceptionFilter
   implements ExceptionFilter, GqlExceptionFilter
@@ -41,23 +56,26 @@ export class HttpExceptionFilter
 
   private handleHttpException(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse();
-    const request = ctx.getRequest();
+    const response = ctx.getResponse<HttpResponse>();
+    const request = ctx.getRequest<RequestWithUser>();
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse();
 
     const isDevelopment =
       this.configService.get<string>('app.nodeEnv') === 'development';
 
+    const message =
+      typeof exceptionResponse === 'string'
+        ? exceptionResponse
+        : (exceptionResponse as { message?: string }).message ||
+          exception.message;
+
     const errorResponse: ErrorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
-      message:
-        typeof exceptionResponse === 'string'
-          ? exceptionResponse
-          : (exceptionResponse as any).message || exception.message,
+      message,
       error: exception.name,
     };
 
@@ -67,7 +85,7 @@ export class HttpExceptionFilter
 
     // Log error details
     this.logger.error(
-      `HTTP ${status} Error: ${errorResponse.message}`,
+      `HTTP ${status} Error: ${typeof message === 'string' ? message : 'Error'}`,
       {
         statusCode: status,
         path: request.url,
@@ -86,7 +104,7 @@ export class HttpExceptionFilter
     host: ArgumentsHost,
   ) {
     const gqlHost = GqlArgumentsHost.create(host);
-    const ctx = gqlHost.getContext();
+    const ctx = gqlHost.getContext<GraphQLContext>();
     const status = exception.getStatus();
     const isDevelopment =
       this.configService.get<string>('app.nodeEnv') === 'development';

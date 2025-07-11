@@ -210,7 +210,7 @@ describe('HealthController', () => {
     });
   });
 
-  describe('checkReadiness', () => {
+  describe('readiness', () => {
     it('should return readiness status when all critical services are up', async () => {
       const readinessResult: HealthCheckResult = {
         status: 'ok',
@@ -226,7 +226,7 @@ describe('HealthController', () => {
       healthCheckService.check.mockResolvedValue(readinessResult);
       mongooseHealth.pingCheck.mockResolvedValue({ mongodb: { status: 'up' } });
 
-      const result = await controller.checkReadiness();
+      const result = await controller.readiness();
 
       expect(result).toEqual(readinessResult);
       expect(healthCheckService.check).toHaveBeenCalledWith([
@@ -257,7 +257,7 @@ describe('HealthController', () => {
         new Error('Database not available'),
       );
 
-      const result = await controller.checkReadiness();
+      const result = await controller.readiness();
 
       expect(result.status).toBe('error');
       expect(result.error).toBeDefined();
@@ -277,7 +277,7 @@ describe('HealthController', () => {
 
       healthCheckService.check.mockResolvedValue(readinessResult);
 
-      const result = await controller.checkReadiness();
+      const result = await controller.readiness();
 
       expect(result).toEqual(readinessResult);
       // Should only check database for readiness, not memory or disk
@@ -288,7 +288,7 @@ describe('HealthController', () => {
     });
   });
 
-  describe('checkLiveness', () => {
+  describe('liveness', () => {
     it('should return liveness status when application is responsive', async () => {
       const livenessResult: HealthCheckResult = {
         status: 'ok',
@@ -306,7 +306,7 @@ describe('HealthController', () => {
         memory_heap: { status: 'up' },
       });
 
-      const result = await controller.checkLiveness();
+      const result = await controller.liveness();
 
       expect(result).toEqual(livenessResult);
       expect(healthCheckService.check).toHaveBeenCalledWith([
@@ -337,7 +337,7 @@ describe('HealthController', () => {
         new Error('Memory critically low'),
       );
 
-      const result = await controller.checkLiveness();
+      const result = await controller.liveness();
 
       expect(result.status).toBe('error');
       expect(result.error).toBeDefined();
@@ -357,7 +357,7 @@ describe('HealthController', () => {
 
       healthCheckService.check.mockResolvedValue(livenessResult);
 
-      const result = await controller.checkLiveness();
+      const result = await controller.liveness();
 
       expect(result).toEqual(livenessResult);
       // Should only check memory for liveness, not database or disk
