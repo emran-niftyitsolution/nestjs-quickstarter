@@ -97,6 +97,7 @@ import { UserModule } from './user/user.module';
           const originalError = (error.extensions?.originalError as any) || {};
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           if (
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             Array.isArray(originalError.message) &&
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             originalError.statusCode === 400
@@ -104,29 +105,34 @@ import { UserModule } from './user/user.module';
             // Group errors by field name
             const fieldErrors: Record<string, string[]> = {};
 
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
             originalError.message.forEach((msg: string) => {
-              // Extract field name by finding the pattern before validation keywords
-              const validationKeywords = [
-                'must',
-                'should',
-                'is',
-                'are',
-                'has',
-                'have',
-                'be',
-              ];
+              // Extract field name from validation message
               let fieldName = 'unknown';
 
-              // Look for patterns like "Last name", "First name", "Email address", etc.
-              for (const keyword of validationKeywords) {
-                const index = msg.toLowerCase().indexOf(keyword);
-                if (index > 0) {
-                  const beforeKeyword = msg.substring(0, index).trim();
-                  // Convert "Last name" to "lastName", "First name" to "firstName", etc.
-                  fieldName = beforeKeyword
+              // Common validation message patterns
+              const patterns = [
+                // Pattern: "FieldName must be..."
+                /^([a-zA-Z_][a-zA-Z0-9_]*?)\s+(?:must|should|is|are|has|have|be)/i,
+                // Pattern: "Field name must be..." (with space)
+                /^([a-zA-Z_][a-zA-Z0-9_]*\s+[a-zA-Z0-9_]*?)\s+(?:must|should|is|are|has|have|be)/i,
+                // Pattern: "Please provide a valid..." (for email, etc.)
+                /^Please provide a valid\s+([a-zA-Z_][a-zA-Z0-9_]*)/i,
+                // Pattern: "FieldName can only contain..."
+                /^([a-zA-Z_][a-zA-Z0-9_]*?)\s+can only contain/i,
+                // Pattern: "FieldName must not be..."
+                /^([a-zA-Z_][a-zA-Z0-9_]*?)\s+must not be/i,
+                // Pattern: "FieldName must not exceed..."
+                /^([a-zA-Z_][a-zA-Z0-9_]*?)\s+must not exceed/i,
+              ];
+
+              for (const pattern of patterns) {
+                const match = msg.match(pattern);
+                if (match) {
+                  // Convert to camelCase if it contains spaces
+                  fieldName = match[1]
                     .toLowerCase()
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
                     .replace(/\s+(\w)/g, (_, letter) => letter.toUpperCase());
                   break;
                 }
