@@ -40,7 +40,7 @@ export interface IUserQueryService {
  */
 export interface IUserCacheService {
   getCachedUser(id: string): Promise<User | null>;
-  setCachedUser(user: User): Promise<void>;
+  setCachedUser(user: UserDocument): Promise<void>;
   getCachedUserByEmail(email: string): Promise<UserDocument | null>;
   setCachedUserByEmail(email: string, user: UserDocument): Promise<void>;
   getCachedUserByUsername(username: string): Promise<UserDocument | null>;
@@ -49,6 +49,8 @@ export interface IUserCacheService {
   invalidateUserCacheByEmail(email: string): Promise<void>;
   invalidateUserCacheByUsername(username: string): Promise<void>;
   invalidateListCaches(): Promise<void>;
+  cacheUserWithLookups(user: User | UserDocument): Promise<void>;
+  invalidateAllUserCaches(user: User | UserDocument): Promise<void>;
 }
 
 /**

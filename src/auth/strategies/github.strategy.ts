@@ -28,8 +28,10 @@ export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
         profile,
         AuthProvider.GITHUB,
       );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       done(null, authResponse);
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       done(error, false);
     }
   }

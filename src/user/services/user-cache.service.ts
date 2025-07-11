@@ -123,19 +123,22 @@ export class UserCacheService implements IUserCacheService {
    * Cache user with automatic lookup cache updates
    * Helps maintain consistency across different lookup methods
    */
-  async cacheUserWithLookups(user: UserDocument): Promise<void> {
+  async cacheUserWithLookups(user: User | UserDocument): Promise<void> {
+    // For caching, we need the document properties, so we'll cache the user as-is
+    // The cache service will handle the serialization
+
     // Cache by ID
     const cacheKey = this.cacheService.getUserKey(user._id);
     await this.cacheService.set(cacheKey, user, this.USER_CACHE_TTL);
 
     // Cache by email if available
     if (user.email) {
-      await this.setCachedUserByEmail(user.email, user);
+      await this.setCachedUserByEmail(user.email, user as UserDocument);
     }
 
     // Cache by username if available
     if (user.username) {
-      await this.setCachedUserByUsername(user.username, user);
+      await this.setCachedUserByUsername(user.username, user as UserDocument);
     }
   }
 

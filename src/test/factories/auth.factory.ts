@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import { AuthResponse } from '../../auth/dto/auth.response';
 import { LoginInput } from '../../auth/dto/login.input';
 import { RegisterInput } from '../../auth/dto/register.input';
-import { AuthProvider, UserRole } from '../../user/user.schema';
+import { AuthProvider, User, UserRole } from '../../user/user.schema';
 
 /**
  * Auth Test Data Factory using Faker
@@ -50,7 +50,7 @@ export class AuthFactory {
   static authResponse(overrides: Partial<AuthResponse> = {}): AuthResponse {
     return {
       user: {
-        id: faker.database.mongodbObjectId(),
+        _id: faker.database.mongodbObjectId(),
         email: faker.internet.email().toLowerCase(),
         firstName: faker.person.firstName(),
         lastName: faker.person.lastName(),
@@ -247,7 +247,7 @@ export class AuthFactory {
 
       adminAuth: this.authResponse({
         user: {
-          id: faker.database.mongodbObjectId(),
+          _id: faker.database.mongodbObjectId(),
           email: 'admin@example.com',
           firstName: 'Admin',
           lastName: 'User',
@@ -340,5 +340,22 @@ export class AuthFactory {
    */
   static reset(): void {
     faker.seed(); // Reset to random seed
+  }
+
+  static mockUser(overrides: Partial<User> = {}): User {
+    return {
+      _id: faker.database.mongodbObjectId(),
+      email: faker.internet.email(),
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
+      username: faker.internet.userName(),
+      role: UserRole.USER,
+      provider: AuthProvider.LOCAL,
+      isEmailVerified: true,
+      isActive: true,
+      createdAt: faker.date.past(),
+      updatedAt: faker.date.recent(),
+      ...overrides,
+    };
   }
 }

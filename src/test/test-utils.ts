@@ -114,7 +114,7 @@ export class MockProviders {
       findById: jest
         .fn()
         .mockImplementation((id: string) =>
-          Promise.resolve(UserFactory.mockUser({ id })),
+          Promise.resolve(UserFactory.mockUser({ _id: id })),
         ),
       findByEmail: jest
         .fn()
@@ -141,10 +141,16 @@ export class MockProviders {
       update: jest
         .fn()
         .mockImplementation((id: string, updateData: any) =>
-          Promise.resolve(UserFactory.mockUser({ id, ...updateData })),
+          Promise.resolve(UserFactory.mockUser({ _id: id, ...updateData })),
         ),
       remove: jest.fn().mockResolvedValue(true),
       emailExists: jest.fn().mockResolvedValue(false),
+      // Mock user service methods
+      findOne: jest
+        .fn()
+        .mockImplementation((id) =>
+          Promise.resolve(UserFactory.mockUser({ _id: id })),
+        ),
     };
   }
 

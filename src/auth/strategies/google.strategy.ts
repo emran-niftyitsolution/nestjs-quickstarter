@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { Strategy } from 'passport-google-oauth20';
 import { AuthProvider } from '../../user/user.schema';
 import { AuthService } from '../auth.service';
 
@@ -21,15 +21,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     accessToken: string,
     refreshToken: string,
     profile: any,
-    done: VerifyCallback,
+    done: any,
   ): Promise<any> {
     try {
       const authResponse = await this.authService.oauthLogin(
         profile,
         AuthProvider.GOOGLE,
       );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       done(null, authResponse);
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       done(error, false);
     }
   }

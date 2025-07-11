@@ -95,7 +95,7 @@ import { UserModule } from './user/user.module';
         formatError: (error: GraphQLError) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const originalError = (error.extensions?.originalError as any) || {};
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
           if (
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             Array.isArray(originalError.message) &&
@@ -142,7 +142,7 @@ import { UserModule } from './user/user.module';
               if (!fieldErrors[fieldName]) {
                 fieldErrors[fieldName] = [];
               }
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+
               fieldErrors[fieldName].push(msg);
             });
 
@@ -150,7 +150,7 @@ import { UserModule } from './user/user.module';
             const mergedErrors = Object.entries(fieldErrors).map(
               ([field, messages]) => ({
                 field,
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
                 message: messages.join('; '),
               }),
             );

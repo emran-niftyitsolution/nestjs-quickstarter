@@ -11,7 +11,7 @@ import { Response } from 'express';
 export class ValidationExceptionsFilter implements ExceptionFilter {
   catch(exception: BadRequestException, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
     const response = ctx.getResponse<Response>();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const request = ctx.getRequest();
@@ -24,7 +24,7 @@ export class ValidationExceptionsFilter implements ExceptionFilter {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (exceptionResponse.message && Array.isArray(exceptionResponse.message)) {
       // Beautify validation errors
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       const validationErrors = this.formatValidationErrors(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         exceptionResponse.message,
@@ -42,9 +42,8 @@ export class ValidationExceptionsFilter implements ExceptionFilter {
       };
 
       // Handle different response types (HTTP vs GraphQL)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       if (response && typeof response.status === 'function') {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
         response.status(status).json(errorResponse);
       } else {
         // For GraphQL or other contexts where response.status is not available
@@ -66,9 +65,8 @@ export class ValidationExceptionsFilter implements ExceptionFilter {
       };
 
       // Handle different response types (HTTP vs GraphQL)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+
       if (response && typeof response.status === 'function') {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
         response.status(status).json(errorResponse);
       } else {
         // For GraphQL or other contexts where response.status is not available
@@ -90,7 +88,6 @@ export class ValidationExceptionsFilter implements ExceptionFilter {
       const fieldMatch = message.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s+/);
       const field = fieldMatch ? fieldMatch[1] : 'unknown';
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       errors.push({
         field,
         message,

@@ -11,7 +11,6 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBadRequestResponse,
-  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiResponse,
@@ -20,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { User } from '../user/user.schema';
 import { AuthService } from './auth.service';
 import { AuthResponse } from './dto/auth.response';
@@ -169,36 +169,10 @@ export class AuthController {
     return this.authService.refreshToken(refreshToken);
   }
 
-  @Get('me')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({
-    summary: 'Get current user profile',
-    description:
-      'Retrieve the authenticated user profile information (rate limited)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'User profile retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', example: '64f5b2c3d1e5f7g8h9i0j1k2' },
-        email: { type: 'string', example: 'user@example.com' },
-        firstName: { type: 'string', example: 'John' },
-        lastName: { type: 'string', example: 'Doe' },
-        role: { type: 'string', example: 'USER' },
-        isEmailVerified: { type: 'boolean', example: true },
-        isActive: { type: 'boolean', example: true },
-        createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' },
-      },
-    },
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Authentication required',
-  })
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
   async getProfile(@CurrentUser() user: User): Promise<User> {
-    return this.authService.getProfile(user.id);
+    return this.authService.getProfile(user._id);
   }
 
   @Get('google')
@@ -229,7 +203,10 @@ export class AuthController {
     description: 'Google authentication successful',
     type: AuthResponse,
   })
-  async googleAuthRedirect(@Request() req: any): Promise<AuthResponse> {
+  async googleAuthRedirect(
+    @Request() req: { user: any },
+  ): Promise<AuthResponse> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.authService.googleLogin(req.user);
   }
 
@@ -261,7 +238,10 @@ export class AuthController {
     description: 'GitHub authentication successful',
     type: AuthResponse,
   })
-  async githubAuthRedirect(@Request() req: any): Promise<AuthResponse> {
+  async githubAuthRedirect(
+    @Request() req: { user: any },
+  ): Promise<AuthResponse> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.authService.githubLogin(req.user);
   }
 }

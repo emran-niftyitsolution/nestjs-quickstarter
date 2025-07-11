@@ -34,13 +34,13 @@ export class AuthResolver {
 
   @Query(() => User)
   @UseGuards(JwtAuthGuard)
-  async me(@Context() context: any): Promise<User> {
+  me(@Context() context: { req: { user: User } }): User {
     return context.req.user;
   }
 
   @Mutation(() => LogoutResponse)
   @UseGuards(JwtAuthGuard)
-  async logout(): Promise<LogoutResponse> {
+  logout(): LogoutResponse {
     // In a stateless JWT setup, logout is typically handled client-side
     // by removing the token. You could implement token blacklisting here.
     return {
@@ -65,11 +65,12 @@ export class AuthResolver {
   @Mutation(() => Boolean)
   @UseGuards(JwtAuthGuard)
   async changePassword(
-    @Context() context: any,
+    @Context() context: { req: { user: User } },
     @Args('currentPassword') currentPassword: string,
     @Args('newPassword') newPassword: string,
   ): Promise<boolean> {
     const userId = context.req.user._id;
+
     return this.authService.changePassword(
       userId,
       currentPassword,

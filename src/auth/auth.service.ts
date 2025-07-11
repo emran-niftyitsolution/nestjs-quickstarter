@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { CreateUserInput } from '../user/dto/create-user.input';
 import {
   AuthProvider,
   User,
@@ -40,7 +41,7 @@ export class AuthService {
       const user = await this.userService.create({
         ...registerInput,
         provider: AuthProvider.LOCAL,
-      } as any);
+      } as CreateUserInput);
 
       const tokens = await this.generateTokens(user);
 
